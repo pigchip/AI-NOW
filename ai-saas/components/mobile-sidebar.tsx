@@ -31,6 +31,7 @@ const MobileSidebar = () => {
             <SheetContent side="left" className="p-0">
                 <Sidebar/>
             </SheetContent>
+            
         </Sheet>
     );
 }
