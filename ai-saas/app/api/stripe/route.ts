@@ -45,7 +45,7 @@ export async function GET(){
                         name:"IA-NOW Pro",
                         description:"Unlimited AI Generated Content",
                     },
-                    unit_amount: 200,
+                    unit_amount: 1000,
                     recurring:{
                         interval:"month"
                     }
