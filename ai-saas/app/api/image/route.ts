@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { Configuration, OpenAIApi } from "openai";
 import { checkApiLimit, increaseApiLimit } from "@/lib/api-limit";
 import { checkSubscription } from "@/lib/subscription";
+//import { db, storage } from "@/app/firebase";
 
 const configuration = new Configuration({
     apiKey: process.env.OPENAI_API_KEY,
@@ -45,9 +46,9 @@ export async function POST(
         const freeTrial = await checkApiLimit();
         const isPro = await checkSubscription();
 
-        if(!freeTrial && !isPro){
-            return new NextResponse("Free trial has expired", { status: 403 });
-        }
+       // if(!freeTrial && !isPro){
+       //     return new NextResponse("Free trial has expired", { status: 403 });
+       // }
 
         const response = await openai.createImage({
             prompt,
@@ -55,10 +56,12 @@ export async function POST(
             size: resolution,
         });
         
-       if(!isPro){
-        await increaseApiLimit();
-       }
-        console.log(prompt, amount, resolution);
+       //if(!isPro){
+       // await increaseApiLimit();
+       //}
+        //console.log(prompt, amount, resolution);
+        console.log(userId);
+        console.log(response.data.data[0].url);
         return NextResponse.json(response.data.data);
     } catch (error) {
         console.log("[IMAGE_ERROR]", error);
