@@ -2,7 +2,7 @@
 
 import axios from "axios";
 import * as z from "zod";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MessageSquare } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { Heading } from "@/components/heading";
@@ -20,6 +20,9 @@ import { UserAvatar } from "@/components/user-avatar";
 import { BotAvatar } from "@/components/bot-avatar";
 import { useProModal } from "@/hooks/use-pro-modal";
 import toast from "react-hot-toast";
+import {fb} from "@/app/firebase";
+import {getFirestore} from "firebase/firestore";
+import { addDoc, collection, query, where, getDocs, onSnapshot } from "firebase/firestore"; 
 
 const ConversationPage = () => {
   const proModal= useProModal();
@@ -33,6 +36,54 @@ const ConversationPage = () => {
     }
   });
 
+
+  useEffect(()=>{
+    getConvs();
+},[])
+
+  const getConvs = async() =>{
+    const idValues ={
+      prompt: "idUser",
+      amount: "idUser",
+      resolution: "idUser"
+    }
+    const response = await axios.post('/api/image',idValues);
+    const userID = response.data;
+    const db = getFirestore(fb);
+     const q = query(collection(db,"conversations"),where("userID","==",userID));
+     let finalConvs: any[]=[];
+     const unsusbcribe = onSnapshot(q,(querySnapshot)=>{
+      querySnapshot.forEach((doc) => {
+        const aux = doc.data();
+        finalConvs.push(aux.question);
+        finalConvs.push(aux.answer)
+       });
+     })
+    setMessages(finalConvs);
+    router.refresh();
+     //console.log(finalURLS);
+  }
+
+
+
+
+  const addConv = async(userID: any, question: any, answer:any) =>{
+    const db = getFirestore(fb);
+    await addDoc(collection(db,"conversations"),{
+      userID: userID,
+      question: question,
+      answer: answer
+    }).then(() =>{
+      console.log("done");
+    }).catch((error)=>{
+      console.log(error);
+    });
+    
+}
+
+
+
+
   const isLoading = form.formState.isSubmitting;
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -42,12 +93,33 @@ const ConversationPage = () => {
         content: values.prompt,
       };
       const newMessages = [...messages, userMessage];
-      console.log(newMessages);
+      //console.log(newMessages);
       const response = await axios.post('/api/conversation',{
         messages: newMessages,
       });
 
-      setMessages((current) => [...current, userMessage, response.data]);
+      
+
+      const idValues ={
+        prompt: "idUser",
+        amount: "idUser",
+        resolution: "idUser"
+      }
+
+      const response1 = await axios.post('/api/image',idValues);
+      const userID = response1.data;
+      await addConv(userID,userMessage,response.data);
+      const db = getFirestore(fb);
+       const q = query(collection(db,"conversations"),where("userID","==",userID));
+       let finalConvs: any[]=[];
+       const querySnapshot = await getDocs(q);
+       querySnapshot.forEach((doc) => {
+        const aux = doc.data();
+        finalConvs.push(aux.question);
+        finalConvs.push(aux.answer);
+      });
+
+      setMessages(finalConvs);
 
       form.reset();
     } catch (error: any) {

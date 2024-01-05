@@ -37,18 +37,18 @@ export async function POST(
         const freeTrial = await checkApiLimit();
         const isPro = await checkSubscription();
 
-        if(!freeTrial && !isPro){
-            return new NextResponse("Free trial has expired", { status: 403 });
-        }
+       // if(!freeTrial && !isPro){
+       //     return new NextResponse("Free trial has expired", { status: 403 });
+       // }
         const response = await openai.createChatCompletion({
             model: "gpt-3.5-turbo",
             messages: [instructionMessage,...messages]
         });
         
-        if(!isPro){
-        await increaseApiLimit();
-        }
-        console.log(messages);
+        //if(!isPro){
+        //await increaseApiLimit();
+        //}
+        //console.log(messages);
         return NextResponse.json(response.data.choices[0].message);
     } catch (error) {
         console.log("[CONVERSATION_ERROR]", error);

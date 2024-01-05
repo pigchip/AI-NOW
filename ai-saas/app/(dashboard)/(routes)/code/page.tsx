@@ -2,7 +2,7 @@
 
 import axios from "axios";
 import * as z from "zod";
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import { Code } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { Heading } from "@/components/heading";
@@ -21,6 +21,9 @@ import { BotAvatar } from "@/components/bot-avatar";
 import ReactMarkdown from "react-markdown";
 import { useProModal } from "@/hooks/use-pro-modal";
 import toast from "react-hot-toast";
+import {fb} from "@/app/firebase";
+import {getFirestore} from "firebase/firestore";
+import { addDoc, collection, query, where, getDocs, onSnapshot } from "firebase/firestore"; 
 
 const CodePage = () => {
   const proModal= useProModal();
@@ -33,6 +36,50 @@ const CodePage = () => {
         prompt:""
     }
   });
+
+
+  useEffect(()=>{
+    getCode();
+},[])
+
+  const getCode = async() =>{
+    const idValues ={
+      prompt: "idUser",
+      amount: "idUser",
+      resolution: "idUser"
+    }
+    const response = await axios.post('/api/image',idValues);
+    const userID = response.data;
+    const db = getFirestore(fb);
+     const q = query(collection(db,"code"),where("userID","==",userID));
+     let finalConvs: any[]=[];
+     const unsusbcribe = onSnapshot(q,(querySnapshot)=>{
+      querySnapshot.forEach((doc) => {
+        const aux = doc.data();
+        finalConvs.push(aux.question);
+        finalConvs.push(aux.answer)
+       });
+     })
+    setMessages(finalConvs);
+    router.refresh();
+     //console.log(finalURLS);
+  }
+
+
+  const addCode = async(userID: any, question: any, answer:any) =>{
+    const db = getFirestore(fb);
+    await addDoc(collection(db,"code"),{
+      userID: userID,
+      question: question,
+      answer: answer
+    }).then(() =>{
+      console.log("done");
+    }).catch((error)=>{
+      console.log(error);
+    });
+    
+}
+
 
   const isLoading = form.formState.isSubmitting;
 
@@ -49,7 +96,26 @@ const CodePage = () => {
         messages: newMessages,
       });
 
-      setMessages((current) => [...current, userMessage, response.data]);
+      const idValues ={
+        prompt: "idUser",
+        amount: "idUser",
+        resolution: "idUser"
+      }
+
+      const response1 = await axios.post('/api/image',idValues);
+      const userID = response1.data;
+      await addCode(userID,userMessage,response.data);
+      const db = getFirestore(fb);
+       const q = query(collection(db,"code"),where("userID","==",userID));
+       let finalConvs: any[]=[];
+       const querySnapshot = await getDocs(q);
+       querySnapshot.forEach((doc) => {
+        const aux = doc.data();
+        finalConvs.push(aux.question);
+        finalConvs.push(aux.answer);
+      });
+
+      setMessages(finalConvs);
 
       form.reset();
     } catch (error: any) {
