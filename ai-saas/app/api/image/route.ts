@@ -29,6 +29,12 @@ export async function POST(
             return new NextResponse("OpenAI API Key not configured", { status: 400 });
         }
 
+
+        if(prompt == "idUser"  && amount == "idUser" && resolution == "idUser"){
+            //console.log(userId)
+           return NextResponse.json(userId);
+        }
+
         if (!prompt) {
             //Valida que el usuario haya enviado el promp
             return new NextResponse("Promp is required", { status: 400 });
@@ -42,6 +48,8 @@ export async function POST(
             //Valida que el usuario haya enviado el promp
             return new NextResponse("Resolution is required", { status: 400 });
         }
+
+
 
         const freeTrial = await checkApiLimit();
         const isPro = await checkSubscription();
@@ -59,10 +67,10 @@ export async function POST(
        //if(!isPro){
        // await increaseApiLimit();
        //}
-        //console.log(prompt, amount, resolution);
-        console.log(userId);
-        console.log(response.data.data[0].url);
-        return NextResponse.json(response.data.data);
+
+        const test = {userId,...response.data.data}
+
+        return NextResponse.json(test);
     } catch (error) {
         console.log("[IMAGE_ERROR]", error);
         return new NextResponse("Internal error", { status: 500});

@@ -15,7 +15,8 @@ var firebaseConfig = {
   storageBucket: "ai-saas-ab86b.appspot.com",
   messagingSenderId: "133115978483",
   appId: "1:133115978483:web:84cc7435c39e8e78310d86",
-  storageBucket: "gs://ai-saas-ab86b.appspot.com"
+  storageBucket: "gs://ai-saas-ab86b.appspot.com",
+  databaseURL: "https://ai-saas-ab86b.firebaseio.com"
 };
 
 // Initialize Firebase

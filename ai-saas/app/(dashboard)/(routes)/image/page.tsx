@@ -1,10 +1,10 @@
 "use client";
-
 import axios from "axios";
 import * as z from "zod";
 import { useState } from "react";
 import { Download, ImageIcon} from "lucide-react";
 import { useForm } from "react-hook-form";
+import React,{useEffect} from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Heading } from "@/components/heading";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,11 +20,10 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { useProModal } from "@/hooks/use-pro-modal";
 import toast from "react-hot-toast";
-import {st} from "@/app/firebase";
+import {fb,st} from "@/app/firebase";
 import { getStorage, ref, getDownloadURL, uploadBytes } from "firebase/storage";
-import NextCors from 'nextjs-cors';
-import type { ImageLoaderProps } from 'next/image';
-
+import {getFirestore} from "firebase/firestore";
+import { addDoc, collection, query, where, getDocs, onSnapshot } from "firebase/firestore"; 
 
 
 
@@ -46,59 +45,117 @@ const ImagePage = () => {
     id: ''
   }
 
+  const getLinks = async() =>{
+    const idValues ={
+      prompt: "idUser",
+      amount: "idUser",
+      resolution: "idUser"
+    }
+    const response = await axios.post('/api/image',idValues);
+    const userID = response.data;
+    const db = getFirestore(fb);
+     const q = query(collection(db,"images"),where("userID","==",userID));
+     let finalURLS: string[]=[];
+     const unsusbcribe = onSnapshot(q,(querySnapshot)=>{
+      querySnapshot.forEach((doc) => {
+        const aux = doc.data();
+        finalURLS.push(aux.imgLink)
+       });
+     })
+     
+    // const querySnapshot = await getDocs(q);
+     //let finalURLS: string[]=[];
+     //querySnapshot.forEach((doc) => {
+     // const aux = doc.data();
+     // finalURLS.push(aux.imgLink)
+    //});
+    setImages(finalURLS);
+    router.refresh();
+     console.log(finalURLS);
+  }
 
-  //var remoteimageurl = "https://oaidalleapiprodscus.blob.core.windows.net/private/org-RgafuQDCiin7UF7yklAcT44G/user-sK3DHq5ObBQIH3dzToscMyZz/img-4TK95UoGiiVq69qRfkpTiuEt.png?st=2023-12-18T05%3A39%3A58Z&se=2023-12-18T07%3A39%3A58Z&sp=r&sv=2021-08-06&sr=b&rscd=inline&rsct=image/png&skoid=6aaadede-4fb3-4698-a8f6-684d7786b067&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2023-12-17T19%3A40%3A48Z&ske=2023-12-18T19%3A40%3A48Z&sks=b&skv=2021-08-06&sig=nKmNVDklmy105Hk8m4%2BudRG6kAxvDNiaJOKin7xZuIU%3D"
-  //var remoteimageurl = "https://oaidalleapiprodscus.blob.core.windows.net/private/org-RgafuQDCiin7UF7yklAcT44G/user-sK3DHq5ObBQIH3dzToscMyZz/img-Hp86pCG161pokxDEug1vTRr2.png?st=2023-12-18T07%3A48%3A27Z&se=2023-12-18T09%3A48%3A27Z&sp=r&sv=2021-08-06&sr=b&rscd=inline&rsct=image/png&skoid=6aaadede-4fb3-4698-a8f6-684d7786b067&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2023-12-17T18%3A36%3A15Z&ske=2023-12-18T18%3A36%3A15Z&sks=b&skv=2021-08-06&sig=viF2yipEboVMX6x3SHBpF4k7bb7Fq101mvp2TJwERmc%3D"
-  //var remoteimageurl = "http://localhost:3000/_next/image?url=https%3A%2F%2Foaidalleapiprodscus.blob.core.windows.net%2Fprivate%2Forg-RgafuQDCiin7UF7yklAcT44G%2Fuser-sK3DHq5ObBQIH3dzToscMyZz%2Fimg-V62fi6o5v4j5tQwxpC5DWfVU.png%3Fst%3D2023-12-18T07%253A57%253A28Z%26se%3D2023-12-18T09%253A57%253A28Z%26sp%3Dr%26sv%3D2021-08-06%26sr%3Db%26rscd%3Dinline%26rsct%3Dimage%2Fpng%26skoid%3D6aaadede-4fb3-4698-a8f6-684d7786b067%26sktid%3Da48cca56-e6da-484e-a814-9c849652bcb3%26skt%3D2023-12-17T15%253A44%253A58Z%26ske%3D2023-12-18T15%253A44%253A58Z%26sks%3Db%26skv%3D2021-08-06%26sig%3Dy%252BwPO5IQX3BuZ42bjp87cZwJANLy3AIaA5mI87DE1Q0%253D&w=1080&q=75";
-  //var remoteimageurl = "https://user-images.githubusercontent.com/8822573/41818831-84e0d4a8-77b6-11e8-8080-22f8cb2b1530.png";
+
+  useEffect(()=>{
+      getLinks();
+  },[])
+
+
+
+
+
   var filename = "images/photo";
-  let contador = 1;
- 
- const f = (remoteimageurl: string) => fetch(remoteimageurl).then(res => {
-  contador++;
+  
+//Activar servidor de CORS para que funcione
+const base = '//cors-anywhere.herokuapp.com/';
+const f =async (url: string,userId: string) => fetch(base.concat(url)).then(res => {
   return res.blob();
-}).then(blob => {
-    //uploading blob to firebase storage
-    console.log(blob);
-    const storageRef = ref(st,filename.concat(contador.toString()).concat(".png"));
-    const s = uploadBytes(storageRef,blob);
-    console.log(blob);
+}).then(async blob => {
+  const contador = url.substring(121,145);
+    //console.log(blob);
+    const storageRef = ref(st,filename.concat(contador.concat(".png")));
+    const imgName = filename.concat(contador.concat(".png"));
+    await uploadBytes(storageRef,blob);
+    const storage = getStorage();
+    const downloadURL = await getDownloadURL(ref(storage,filename.concat(contador.concat(".png"))));
+    //console.log(downloadURL);
+    
+    await addImg(userId,downloadURL);
 }).catch(error => {
   console.error(error);
 });
-/*
-const g = async() =>{
-  return await axios.request({url: remoteimageurl ,method: 'GET',responseType:'blob'}).then (response =>{
-    const storageRef = ref(st,filename);
-    console.log(response.data);
-    //uploadBytes(storageRef,response.data); 
-  }).catch(error => {
-    console.log('error: ', error);
-  }).finally( () =>{
-    console.log("Yata");
+
+
+  const addImg = async(userID: any, imgLink: string) =>{
+      const db = getFirestore(fb);
+      await addDoc(collection(db,"images"),{
+        userID: userID,
+        imgLink: imgLink
+      }).then(() =>{
+        console.log("done");
+      }).catch((error)=>{
+        console.log(error);
+      });
+      
   }
-  )
-}
-*/
+
 
   const [values,setValues] = useState(initialStateValues);
 
   const isLoading = form.formState.isSubmitting;
 
-  const imageLoader = ({ src, width, quality }: ImageLoaderProps) => {
-    return `https://localhost:3000/${src}?w=${width}&q=${quality || 75}`
-  }
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    
     try{
-      setImages([]);
+      //setImages([]);
       const response = await axios.post('/api/image', values);
       //console.log(response);
-      const urls= response.data.map((image:{url:string})=>image.url);
-      //console.log(urls)
-      setImages(urls);
-      //console.log(setImages)
+      const userId = await response.data['userId'];
+      delete response.data['userId'];
+      const enlaces = Object.values(response.data);
+      //console.log(enlaces)
+      try{
+        const urls = enlaces.map((p:any) => p.url)
+      //console.log(urls);
+     //console.log(urls.length);
+     for(let i=0;i<urls.length;i++){
+          await f(urls[i],userId);
+     }
+     
+
+     const db = getFirestore(fb);
+     const q = query(collection(db,"images"),where("userID","==",userId));
+     const querySnapshot = await getDocs(q);
+     let finalURLS: string[]=[];
+     querySnapshot.forEach((doc) => {
+      const aux = doc.data();
+      finalURLS.push(aux.imgLink)
+    });
+     console.log(finalURLS);
+     setImages(finalURLS);
+      }catch(error:any){
+        console.log(error)
+      }
+      
       form.reset();
     } catch (error: any) {
       if(error?.response?.status ===403){
@@ -107,6 +164,9 @@ const g = async() =>{
         toast.error("Something went wrong");
       }
     } finally {
+
+      
+      
       router.refresh();
     }
   };
@@ -136,7 +196,6 @@ const g = async() =>{
                 grid
                 grid-cols-12
                 gap-2"
-               // onSubmit={handleSubmit1}
                 >
                     <FormField 
                         name="prompt"
@@ -230,14 +289,7 @@ const g = async() =>{
               {images.map((src) => (
                 <Card key={src} className="rounded-lg overflow-hidden">
                   <div className="relative aspect-square">
-                   
-                    <Image
-      loader={imageLoader}
-      src={src}
-      alt="Picture of the author"
-      width={500}
-      height={500}
-    />
+                  <Image alt="Image" fill src={src} />
                   </div>
                   <CardFooter className="p-2">
                     <Button onClick={()=>window.open(src)} variant="secondary" className="w-full">
