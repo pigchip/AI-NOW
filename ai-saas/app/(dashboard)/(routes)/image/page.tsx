@@ -62,13 +62,6 @@ const ImagePage = () => {
         finalURLS.push(aux.imgLink)
        });
      })
-     
-    // const querySnapshot = await getDocs(q);
-     //let finalURLS: string[]=[];
-     //querySnapshot.forEach((doc) => {
-     // const aux = doc.data();
-     // finalURLS.push(aux.imgLink)
-    //});
     setImages(finalURLS);
     router.refresh();
      console.log(finalURLS);
@@ -87,6 +80,7 @@ const ImagePage = () => {
   
 //Activar servidor de CORS para que funcione
 const base = '//cors-anywhere.herokuapp.com/';
+
 const f =async (url: string,userId: string) => fetch(base.concat(url)).then(res => {
   return res.blob();
 }).then(async blob => {
